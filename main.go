@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
+	_ "github.com/lib/pq"
+	"database/sql"
 )
 
 
@@ -72,7 +74,6 @@ type BlockStruct struct {
 
 func getBlock(s string) BlockStruct {
 	url := "https://sidechain-dev.sonm.com/"
-	fmt.Println("URL:>", url)
 
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":5}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
@@ -84,10 +85,10 @@ func getBlock(s string) BlockStruct {
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
+	//fmt.Println("response Status:", resp.Status)
+	//fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	//fmt.Println("response Body:", string(body))
 
 	var block = BlockStruct{}
 	err1 := json.Unmarshal(body, &block)
@@ -98,15 +99,16 @@ func getBlock(s string) BlockStruct {
 	return block
 }
 
+
 type BlockNumber struct {
 	Jsonrpc string `json:"jsonrpc"`
 	ID      int    `json:"id"`
 	Result  string `json:"result"`
 }
 
+
 func getLastBlockNumber() uint64{
 	url := "https://sidechain-dev.sonm.com/"
-	fmt.Println("URL:>", url)
 
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":5}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
@@ -128,12 +130,131 @@ func getLastBlockNumber() uint64{
 	return hextoint(blocknumber.Result)
 }
 
-func main() {
-	block := getBlock("0x2e2488")
 
-	fmt.Println(block.Result.Number)
-	n := hextoint(block.Result.Number)
+func insertBlock(db *sql.DB, block BlockStruct) {
+	_, err := db.Exec(
+	`insert into blocks(
+		number,
+		hash,
+		parentHash,
+		nonce,
+		sha3Uncles,
+		logsBloom,
+		transactionsRoot,
+		stateRoot,
+		receiptsRoot,
+		miner,
+		difficulty,
+		totalDifficulty,
+		size,
+		proofOfAuthorityData,
+		gasLimit,
+		gasUsed,
+		timestamp,
+		mixhash) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+	    hextoint(block.Result.Number),
+		//Web3.toHex(block.hash),
+		block.Result.Hash,
+		//Web3.toHex(block.parentHash),
+		block.Result.ParentHash,
+		//Web3.toHex(block.nonce),
+		block.Result.Nonce,
+		//Web3.toHex(block.sha3Uncles),
+		block.Result.Sha3Uncles,
+		//Web3.toHex(block.logsBloom),
+		block.Result.LogsBloom,
+		//Web3.toHex(block.transactionsRoot),
+		block.Result.TransactionsRoot,
+		//Web3.toHex(block.stateRoot),
+		block.Result.StateRoot,
+		//Web3.toHex(block.receiptsRoot),
+		block.Result.ReceiptsRoot,
+		//block.miner,
+		block.Result.Miner,
+		//block.difficulty,
+		hextoint(block.Result.Difficulty),
+		//block.totalDifficulty,
+		hextoint(block.Result.TotalDifficulty),
+		//block.size,
+		hextoint(block.Result.Size),
+		//Web3.toHex(block.proofOfAuthorityData),
+		block.Result.ExtraData,
+		//block.gasLimit,
+		hextoint(block.Result.GasLimit),
+		//block.gasUsed,
+		hextoint(block.Result.GasUsed),
+		//block.timestamp,
+		hextoint(block.Result.Timestamp),
+		//Web3.toHex(block.mixHash)
+		block.Result.MixHash)
+	if err != nil {
+		panic(err)
+	}
+	for _, tr := range block.Result.Transactions {
+		_, err := db.Exec(
+			`insert into transactions(
+			hash,
+			nonce ,
+			blockHash,
+			blockNumber ,
+			transactionIndex,
+			"from",
+			"to",
+			"value",
+			gas,
+			gasPrice,
+			input,
+			v,
+			r,
+			s) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			//Web3.toHex(tr.hash),
+			tr.Hash,
+			//tr.nonce,
+			hextoint(tr.Nonce),
+			//Web3.toHex(tr.blockHash),
+			tr.BlockHash,
+			//tr.blockNumber,
+			hextoint(tr.BlockNumber),
+			//tr.transactionIndex,
+			hextoint(tr.TransactionIndex),
+			//tr['from'],
+			tr.From,
+			//tr['to'],
+			tr.To,
+			//tr['value'],
+			hextoint(tr.Value),
+			//tr.gas,
+			hextoint(tr.Gas),
+			//tr.gasPrice,
+			hextoint(tr.GasPrice),
+			//tr.input,
+			tr.Input,
+			//tr.v,
+			tr.V,
+			//Web3.toHex(tr.r),
+			tr.R,
+			//Web3.toInt(tr.s)
+			tr.S)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+
+func main() {
+	n := getLastBlockNumber()
 	fmt.Println(n)
-	fmt.Println(inttohex(n))
-	fmt.Println(getLastBlockNumber())
+	//block := getBlock(inttohex(n))
+	connStr := "user=ethtodb password=ethtodb dbname=eth sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	//insertBlock(db, block)
+	var i uint64
+	for i =3024000; i < n; i++ {
+		insertBlock(db,  getBlock(inttohex(i)))
+	}
 }
