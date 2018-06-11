@@ -17,7 +17,7 @@ func hextoint(h string) uint64 {
 	var n uint64
 	n, err := strconv.ParseUint(h[2:], 16, 64)
 	if err != nil {
-		log.Fatal("error")
+		log.Fatalln("Ошибка преобразования hex to int")
 	}
 	return n
 }
@@ -72,19 +72,22 @@ type BlockStruct struct {
 }
 
 
-func getBlock(s string) BlockStruct {
+func getBlock(s string, sint uint64) BlockStruct {
 	url := "https://sidechain-dev.sonm.com/"
 
-	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":5}`)
+	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":`+ strconv.FormatUint(sint, 10) +`}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Ошибка получения ответа от сервера")
 	}
 	defer resp.Body.Close()
 
+	if resp.Status != "200 OK" {
+		log.Fatalln("Статус не 200: ", resp.Status, ", Req: ", string(jsonStr))
+	}
 	//fmt.Println("response Status:", resp.Status)
 	//fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -93,7 +96,8 @@ func getBlock(s string) BlockStruct {
 	var block = BlockStruct{}
 	err1 := json.Unmarshal(body, &block)
 	if err1 != nil {
-		log.Fatal("error")
+		fmt.Println(string(body))
+		log.Fatalln("Ошибка преобразования в json")
 	}
 
 	return block
@@ -171,7 +175,7 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		hextoint(block.Result.Timestamp),
 		block.Result.MixHash)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Ошибка вставки в blocks")
 	}
 	for _, tr := range block.Result.Transactions {
 		_, err := db.Exec(
@@ -205,17 +209,18 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 			tr.R,
 			tr.S)
 		if err != nil {
-			panic(err)
+			log.Fatalln("Ошибка вставки в transactions")
 		}
 	}
 }
 
 
 func processBlock(db *sql.DB, i uint64){
-	block := getBlock(inttohex(i))
+	block := getBlock(inttohex(i), i)
 	insertBlock(db,  block)
 }
 
+const maxt = 5
 
 func main() {
 	n := getLastBlockNumber()
@@ -226,8 +231,17 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	var i uint64
-	for i =3024000; i < n; i++ {
-		processBlock(db, i)
+
+	var i uint64 = 0
+	sem := make(chan int, maxt)
+	for {
+		sem <- 1
+		i++
+		go func(i uint64) {
+			fmt.Println(i)
+			processBlock(db, i)
+			<-sem
+		}(i)
 	}
+
 }
