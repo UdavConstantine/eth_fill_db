@@ -211,19 +211,23 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 }
 
 
+func processBlock(db *sql.DB, i uint64){
+	block := getBlock(inttohex(i))
+	insertBlock(db,  block)
+}
+
+
 func main() {
 	n := getLastBlockNumber()
 	fmt.Println(n)
-	//block := getBlock(inttohex(n))
 	connStr := "user=ethtodb password=ethtodb dbname=eth sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
-	//insertBlock(db, block)
 	var i uint64
 	for i =3024000; i < n; i++ {
-		insertBlock(db,  getBlock(inttohex(i)))
+		processBlock(db, i)
 	}
 }
