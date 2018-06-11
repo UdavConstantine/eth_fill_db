@@ -96,8 +96,7 @@ func getBlock(s string, sint uint64) BlockStruct {
 	var block = BlockStruct{}
 	err1 := json.Unmarshal(body, &block)
 	if err1 != nil {
-		fmt.Println(string(body))
-		log.Fatalln("Ошибка преобразования в json")
+		log.Fatalln("Ошибка преобразования в json", string(body))
 	}
 
 	return block
@@ -220,7 +219,7 @@ func processBlock(db *sql.DB, i uint64){
 	insertBlock(db,  block)
 }
 
-const maxt = 5
+const maxt = 200
 
 func main() {
 	n := getLastBlockNumber()
