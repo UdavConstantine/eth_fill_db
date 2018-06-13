@@ -10,16 +10,14 @@ import (
 	"strconv"
 	_ "github.com/lib/pq"
 	"database/sql"
+	"math/big"
 )
 
 
-func hextoint(h string) uint64 {
-	var n uint64
-	n, err := strconv.ParseUint(h[2:], 16, 64)
-	if err != nil {
-		log.Fatalln("Ошибка преобразования hex to int")
-	}
-	return n
+func hextoint(h string) string {
+	var n big.Int
+	n.SetString(h[2:], 16)
+	return n.String()
 }
 
 
@@ -73,8 +71,8 @@ type BlockStruct struct {
 
 
 func getBlock(s string, sint uint64) BlockStruct {
-	url := "https://sidechain-dev.sonm.com/"
-
+	//url := "https://sidechain-dev.sonm.com/"
+	url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":`+ strconv.FormatUint(sint, 10) +`}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
@@ -110,9 +108,9 @@ type BlockNumber struct {
 }
 
 
-func getLastBlockNumber() uint64{
-	url := "https://sidechain-dev.sonm.com/"
-
+func getLastBlockNumber() string{
+	//url := "https://sidechain-dev.sonm.com/"
+	url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":5}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
@@ -174,7 +172,7 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		hextoint(block.Result.Timestamp),
 		block.Result.MixHash)
 	if err != nil {
-		log.Fatalln("Ошибка вставки в blocks")
+		log.Fatalln("Ошибка вставки в blocks:", err)
 	}
 	for _, tr := range block.Result.Transactions {
 		_, err := db.Exec(
@@ -208,7 +206,7 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 			tr.R,
 			tr.S)
 		if err != nil {
-			log.Fatalln("Ошибка вставки в transactions")
+			log.Fatalln("Ошибка вставки в transactions:", err)
 		}
 	}
 }
