@@ -88,12 +88,16 @@ func getBlock(s string, sint uint64) (BlockStruct, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalln("Ошибка получения ответа от сервера:", err)
+		//log.Fatalln("Ошибка получения ответа от сервера:", err)
+		log.Println("Ошибка получения ответа от сервера:", err)
+		return BlockStruct{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.Status != "200 OK" {
-		log.Fatalln("Статус не 200: ", resp.Status, ", Req: ", string(jsonStr))
+		//log.Fatalln("Статус не 200: ", resp.Status, ", Req: ", string(jsonStr))
+		log.Println("Статус не 200: ", resp.Status, ", Req: ", string(jsonStr))
+		return BlockStruct{}, err
 	}
 	//fmt.Println("response Status:", resp.Status)
 	//fmt.Println("response Headers:", resp.Header)
@@ -103,7 +107,9 @@ func getBlock(s string, sint uint64) (BlockStruct, error) {
 	var block = BlockStruct{}
 	err1 := json.Unmarshal(body, &block)
 	if err1 != nil {
-		log.Fatalln("Ошибка преобразования в json", string(body))
+		//log.Fatalln("Ошибка преобразования в json", string(body))
+		log.Println("Ошибка преобразования в json", string(body))
+		return BlockStruct{}, err1
 	}
 
 	return block, nil
@@ -225,7 +231,7 @@ func processBlock(db *sql.DB, i uint64){
 
 	for {
 		block, err := getBlock(inttohex(i), i)
-		if err != nil {
+		if err != nil || len(block.Result.Number) == 0 {
 			time.Sleep(time.Millisecond * 100)
 		} else {
 			insertBlock(db,  block)
@@ -234,7 +240,7 @@ func processBlock(db *sql.DB, i uint64){
 	}
 }
 
-const maxt = 200
+const maxt = 500
 
 func main() {
 	n := getLastBlockNumber()
@@ -248,10 +254,10 @@ func main() {
 
 	var i uint64 = 0
 	sem := make(chan int, maxt)
-	for i=0; i < n; i++{
+	for i = 900; i < n; i++{
 		sem <- 1
 		go func(i uint64) {
-			fmt.Println(i)
+			//fmt.Println(i)
 			processBlock(db, i)
 			<-sem
 		}(i)
