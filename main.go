@@ -240,10 +240,11 @@ func processBlock(db *sql.DB, i uint64){
 	}
 }
 
-const maxt = 500
+const maxt = 200
 
 func main() {
 	n := getLastBlockNumber()
+	//n = 1000
 	fmt.Println(n)
 	connStr := "user=ethtodb password=ethtodb dbname=eth sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
@@ -254,10 +255,10 @@ func main() {
 
 	var i uint64 = 0
 	sem := make(chan int, maxt)
-	for i = 900; i < n; i++{
+	for i = 0; i < n; i++{
 		sem <- 1
 		go func(i uint64) {
-			//fmt.Println(i)
+			fmt.Println(i)
 			processBlock(db, i)
 			<-sem
 		}(i)
