@@ -11,13 +11,22 @@ import (
 	_ "github.com/lib/pq"
 	"database/sql"
 	"math/big"
+	"time"
 )
 
 
-func hextoint(h string) string {
+func hextointdb(h string) string {
 	var n big.Int
 	n.SetString(h[2:], 16)
 	return n.String()
+}
+
+func hextoint(h string) uint64 {
+	n, err := strconv.ParseUint(h[2:], 16, 64)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании hex в uin64", err)
+	}
+	return n
 }
 
 
@@ -70,16 +79,16 @@ type BlockStruct struct {
 }
 
 
-func getBlock(s string, sint uint64) BlockStruct {
-	//url := "https://sidechain-dev.sonm.com/"
-	url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
+func getBlock(s string, sint uint64) (BlockStruct, error) {
+	url := "https://sidechain-dev.sonm.com/"
+	//url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":`+ strconv.FormatUint(sint, 10) +`}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalln("Ошибка получения ответа от сервера")
+		log.Fatalln("Ошибка получения ответа от сервера:", err)
 	}
 	defer resp.Body.Close()
 
@@ -97,7 +106,7 @@ func getBlock(s string, sint uint64) BlockStruct {
 		log.Fatalln("Ошибка преобразования в json", string(body))
 	}
 
-	return block
+	return block, nil
 }
 
 
@@ -108,9 +117,9 @@ type BlockNumber struct {
 }
 
 
-func getLastBlockNumber() string{
-	//url := "https://sidechain-dev.sonm.com/"
-	url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
+func getLastBlockNumber() uint64{
+	url := "https://sidechain-dev.sonm.com/"
+	//url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":5}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
@@ -153,7 +162,7 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		gasUsed,
 		timestamp,
 		mixhash) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
-	    hextoint(block.Result.Number),
+	    hextointdb(block.Result.Number),
 		block.Result.Hash,
 		block.Result.ParentHash,
 		block.Result.Nonce,
@@ -163,13 +172,13 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		block.Result.StateRoot,
 		block.Result.ReceiptsRoot,
 		block.Result.Miner,
-		hextoint(block.Result.Difficulty),
-		hextoint(block.Result.TotalDifficulty),
-		hextoint(block.Result.Size),
+		hextointdb(block.Result.Difficulty),
+		hextointdb(block.Result.TotalDifficulty),
+		hextointdb(block.Result.Size),
 		block.Result.ExtraData,
-		hextoint(block.Result.GasLimit),
-		hextoint(block.Result.GasUsed),
-		hextoint(block.Result.Timestamp),
+		hextointdb(block.Result.GasLimit),
+		hextointdb(block.Result.GasUsed),
+		hextointdb(block.Result.Timestamp),
 		block.Result.MixHash)
 	if err != nil {
 		log.Fatalln("Ошибка вставки в blocks:", err)
@@ -192,15 +201,15 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 			r,
 			s) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 			tr.Hash,
-			hextoint(tr.Nonce),
+			hextointdb(tr.Nonce),
 			tr.BlockHash,
-			hextoint(tr.BlockNumber),
-			hextoint(tr.TransactionIndex),
+			hextointdb(tr.BlockNumber),
+			hextointdb(tr.TransactionIndex),
 			tr.From,
 			tr.To,
-			hextoint(tr.Value),
-			hextoint(tr.Gas),
-			hextoint(tr.GasPrice),
+			hextointdb(tr.Value),
+			hextointdb(tr.Gas),
+			hextointdb(tr.GasPrice),
 			tr.Input,
 			tr.V,
 			tr.R,
@@ -213,8 +222,16 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 
 
 func processBlock(db *sql.DB, i uint64){
-	block := getBlock(inttohex(i), i)
-	insertBlock(db,  block)
+
+	for {
+		block, err := getBlock(inttohex(i), i)
+		if err != nil {
+			time.Sleep(time.Millisecond * 100)
+		} else {
+			insertBlock(db,  block)
+			break
+		}
+	}
 }
 
 const maxt = 200
@@ -231,9 +248,8 @@ func main() {
 
 	var i uint64 = 0
 	sem := make(chan int, maxt)
-	for {
+	for i=0; i < n; i++{
 		sem <- 1
-		i++
 		go func(i uint64) {
 			fmt.Println(i)
 			processBlock(db, i)
