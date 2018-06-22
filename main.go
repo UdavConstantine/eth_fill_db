@@ -163,7 +163,7 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		difficulty,
 		totalDifficulty,
 		size,
-		proofOfAuthorityData,
+		extraData,
 		gasLimit,
 		gasUsed,
 		timestamp,
@@ -246,7 +246,7 @@ func main() {
 	n := getLastBlockNumber()
 	//n = 1000
 	fmt.Println(n)
-	connStr := "user=ethtodb password=ethtodb dbname=eth sslmode=disable"
+	connStr := "user=ethtodb password=ethtodb dbname=eth_blocks sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -263,5 +263,9 @@ func main() {
 			<-sem
 		}(i)
 	}
+
+	log.Println(len(sem))
+	time.Sleep(time.Second * 5)
+	log.Println(len(sem))
 
 }
