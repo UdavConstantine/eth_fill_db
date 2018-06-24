@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<body>
+
+<div id="app">
+    <button v-on:click="getBlocks">Get Blocks</button>
+
+    <table border="2px">
+        <tr v-for="b in blocks">
+           <td v-on:click="getBlock(b.number)"> {{ b.number }} </td>
+           <td> {{ b.txcount }} </td>
+           <td> {{ b.hash }} </td>
+        </tr>
+    </table>
+    <p>Selected block</p>
+    <table border="2px">
+        <tr><td>Difficulty      </td><td>{{ block.difficulty       }}</td></tr>
+        <tr><td>ExtraData       </td><td>{{ block.extradata        }}</td></tr>
+        <tr><td>GasLimit        </td><td>{{ block.gaslimit         }}</td></tr>
+        <tr><td>GasUsed         </td><td>{{ block.gasused          }}</td></tr>
+        <tr><td>Hash            </td><td>{{ block.hash             }}</td></tr>
+        <tr><td>LogsBloom       </td><td>{{ block.logsbloom        }}</td></tr>
+        <tr><td>Miner           </td><td>{{ block.miner            }}</td></tr>
+        <tr><td>MixHash         </td><td>{{ block.mixhash          }}</td></tr>
+        <tr><td>Nonce           </td><td>{{ block.nonce            }}</td></tr>
+        <tr><td>Number          </td><td>{{ block.number           }}</td></tr>
+        <tr><td>ParentHash      </td><td>{{ block.parenthash       }}</td></tr>
+        <tr><td>ReceiptsRoot    </td><td>{{ block.receiptsroot     }}</td></tr>
+        <tr><td>Sha3Uncles      </td><td>{{ block.sha3uncles       }}</td></tr>
+        <tr><td>Size            </td><td>{{ block.size             }}</td></tr>
+        <tr><td>StateRoot       </td><td>{{ block.stateroot        }}</td></tr>
+        <tr><td>Timestamp       </td><td>{{ block.timestamp        }}</td></tr>
+        <tr><td>TotalDifficulty </td><td>{{ block.totaldifficulty  }}</td></tr>
+        <tr><td>TransactionsRoot</td><td>{{ block.transactionsroot }}</td></tr>
+        <tr><td>TxCount         </td><td>{{ block.txcount          }}</td></tr>
+    </table>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
