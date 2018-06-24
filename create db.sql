@@ -16,7 +16,8 @@ CREATE UNLOGGED TABLE blocks (
   gasLimit BIGINT NOT NULL,
   gasUsed BIGINT NOT NULL,
   "timestamp" bigint NOT NULL,
-  mixhash TEXT
+  mixhash TEXT,
+  txCount bigint not null
 );
 
 CREATE UNLOGGED TABLE transactions (

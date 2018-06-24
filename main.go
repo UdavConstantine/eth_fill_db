@@ -167,7 +167,8 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		gasLimit,
 		gasUsed,
 		timestamp,
-		mixhash) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+		mixhash,
+		txCount) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
 	    hextointdb(block.Result.Number),
 		block.Result.Hash,
 		block.Result.ParentHash,
@@ -185,7 +186,8 @@ func insertBlock(db *sql.DB, block BlockStruct) {
 		hextointdb(block.Result.GasLimit),
 		hextointdb(block.Result.GasUsed),
 		hextointdb(block.Result.Timestamp),
-		block.Result.MixHash)
+		block.Result.MixHash,
+		len(block.Result.Transactions))
 	if err != nil {
 		log.Fatalln("Ошибка вставки в blocks:", err)
 	}
@@ -240,11 +242,11 @@ func processBlock(db *sql.DB, i uint64){
 	}
 }
 
-const maxt = 200
+const maxt = 500
 
 func main() {
 	n := getLastBlockNumber()
-	//n = 1000
+	//n = 20
 	fmt.Println(n)
 	connStr := "user=ethtodb password=ethtodb dbname=eth_blocks sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
@@ -258,14 +260,16 @@ func main() {
 	for i = 0; i < n; i++{
 		sem <- 1
 		go func(i uint64) {
-			fmt.Println(i)
+			if i%10000 == 0 {
+				fmt.Println(i)
+			}
 			processBlock(db, i)
 			<-sem
 		}(i)
 	}
 
 	log.Println(len(sem))
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 180)
 	log.Println(len(sem))
 
 }
