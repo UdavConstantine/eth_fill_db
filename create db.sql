@@ -54,6 +54,9 @@ ON transactions("from");
 CREATE INDEX idx_transactions_to
 ON transactions("to");
 
+CREATE INDEX idx_transactions_blocknumber
+ON transactions(blockNumber);
+
 
 
 grant select on public.blocks to web_anon;
