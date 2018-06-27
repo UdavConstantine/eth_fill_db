@@ -6,11 +6,16 @@
 
 <div id="app">
     <button v-on:click="getBlocks">Get Blocks</button>
-
+    <p>Blocks</p>
     <table border="2px">
+        <tr>
+            <th>Number</th>
+            <th>TxCount</th>
+            <th>Hash</th>
+        </tr>
         <tr v-for="b in blocks">
            <td v-on:click="getBlock(b.number)"> {{ b.number }} </td>
-           <td> {{ b.txcount }} </td>
+           <td v-on:click="getTxsByBlockNum(b.number)"> {{ b.txcount }} </td>
            <td> {{ b.hash }} </td>
         </tr>
     </table>
@@ -34,8 +39,33 @@
         <tr><td>Timestamp       </td><td>{{ block.timestamp        }}</td></tr>
         <tr><td>TotalDifficulty </td><td>{{ block.totaldifficulty  }}</td></tr>
         <tr><td>TransactionsRoot</td><td>{{ block.transactionsroot }}</td></tr>
-        <tr><td>TxCount         </td><td>{{ block.txcount          }}</td></tr>
+        <tr><td>TxCount         </td><td v-on:click="getTxsByBlockNum(block.number)">{{ block.txcount          }}</td></tr>
     </table>
+
+    <p>Transactions</p>
+    <table border="2px">
+        <tr>
+            <th>Hash</th>
+            <th>Block Number</th>
+            <th>Nonce</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Value</th>
+            <th>Gas</th>
+            <th>GasPrice</th>
+        </tr>
+        <tr v-for="t in transactions">
+            <td> {{ t.hash }} </td>
+            <td> {{ t.blocknumber }}</td>
+            <td> {{ t.nonce }} </td>
+            <td v-on:click="getTxsByParticipant(t.from)"> {{ t.from }} </td>
+            <td v-on:click="getTxsByParticipant(t.to)"> {{ t.to }} </td>
+            <td> {{ t.value }} </td>
+            <td> {{ t.gas }} </td>
+            <td> {{ t.gasprice }} </td>
+        </tr>
+    </table>
+
 </div>
 
 <script src="app.js"></script>
