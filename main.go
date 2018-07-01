@@ -80,7 +80,8 @@ type BlockStruct struct {
 
 
 func getBlock(s string, sint uint64) (BlockStruct, error) {
-	url := "https://sidechain-dev.sonm.com/"
+	//url := "https://sidechain-dev.sonm.com/"
+	url := "https://sidechain.livenet.sonm.com"
 	//url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["`+ s + `", true],"id":`+ strconv.FormatUint(sint, 10) +`}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
@@ -124,7 +125,8 @@ type BlockNumber struct {
 
 
 func getLastBlockNumber() uint64{
-	url := "https://sidechain-dev.sonm.com/"
+	//url := "https://sidechain-dev.sonm.com/"
+	url := "https://sidechain.livenet.sonm.com"
 	//url := "https://mainnet.infura.io/Ol4LW5vVUUUV0SrUxkzv"
 	var jsonStr = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":5}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
@@ -242,7 +244,7 @@ func processBlock(db *sql.DB, i uint64){
 	}
 }
 
-const maxt = 500
+const maxt = 1000
 
 func main() {
 	n := getLastBlockNumber()

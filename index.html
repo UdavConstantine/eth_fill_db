@@ -5,7 +5,10 @@
 <body>
 
 <div id="app">
-    <button v-on:click="getBlocks">Get Blocks</button>
+    <button v-on:click="getBlocks(1)">Get Blocks</button>
+    <button v-on:click="prevBPage()"><<</button>
+    <p>{{bpage}}</p>
+    <button v-on:click="nextBPage()">>></button>
     <p>Blocks</p>
     <table border="2px">
         <tr>
@@ -43,6 +46,9 @@
     </table>
 
     <p>Transactions</p>
+    <button v-on:click="prevTxPage()"><<</button>
+    <p>{{txpage}}</p>
+    <button v-on:click="nextTxPage()">>></button>
     <table border="2px">
         <tr>
             <th>Hash</th>
@@ -58,8 +64,8 @@
             <td> {{ t.hash }} </td>
             <td> {{ t.blocknumber }}</td>
             <td> {{ t.nonce }} </td>
-            <td v-on:click="getTxsByParticipant(t.from)"> {{ t.from }} </td>
-            <td v-on:click="getTxsByParticipant(t.to)"> {{ t.to }} </td>
+            <td v-on:click="getTxsByParticipant(t.from, 1)"> {{ t.from }} </td>
+            <td v-on:click="getTxsByParticipant(t.to, 1)"> {{ t.to }} </td>
             <td> {{ t.value }} </td>
             <td> {{ t.gas }} </td>
             <td> {{ t.gasprice }} </td>
